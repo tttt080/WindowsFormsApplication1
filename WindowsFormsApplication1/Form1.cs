@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using Couchbase.Configuration;
 using Couchbase;
 using Couchbase.Configuration.Client;
+using Newtonsoft.Json;
 
 namespace WindowsFormsApplication1
 {
@@ -22,23 +23,35 @@ namespace WindowsFormsApplication1
 
         private void button1_Click(object sender, EventArgs e)
         {
-            ClientConfiguration ccf = new ClientConfiguration();
-            ccf.Servers.Add(new Uri("http://192.168.1.200:8091/pools/default"));
-
            
             try
             {
-          
-            Cluster Cluster = new Cluster(ccf);
-            Cluster.OpenBucket();
+                string key = textBox1.Text;
+                string value = textBox2.Text;
+
+                using (var bucket = Cluster.OpenBucket("osms_cb"))
+                {
+                    
+                    if(bucket.Exists(key))
+                    {
+                        var result = bucket.Replace(key, value);
+
+                        Console.WriteLine(String.Format("======Replace======={0},{1}", key, result.Success));
+                    }
+                    else
+                    {
+                        var result = bucket.Insert(key, value);
+
+                        Console.WriteLine(String.Format("======Insert======={0},{1}", key, result.Success));
+                    }
+                    
+                    
+                }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
-
-
-
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -66,5 +79,60 @@ namespace WindowsFormsApplication1
 
 
 }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            try
+            {
+
+                string key = textBox3.Text;
+                using (var bucket = Cluster.OpenBucket("osms_cb"))
+                {
+
+                    if (bucket.Exists(key))
+                    {
+                        // var result =  bucket.Get(key);
+                        string strJson = bucket.Get<string>(key).Value;
+
+                        /*
+                        if (string.IsNullOrEmpty(strJson))
+                        {
+                         
+                        }
+                        else
+                        {
+                            return JsonConvert.DeserializeObject(strJson, typeof(T));
+                        }
+                        */
+
+
+                        Console.WriteLine(String.Format("======get======={0},{1}", key, strJson));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+        }
+        public Cluster Cluster;
+        private void button4_Click(object sender, EventArgs e)
+        {
+            ClientConfiguration ccf = new ClientConfiguration();
+            ccf.Servers.Add(new Uri("http://192.168.1.200:8091/pools"));
+
+
+            try
+            {
+
+                Cluster = new Cluster(ccf);
+                Cluster.OpenBucket();
+            }catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+       }
     }
 }
